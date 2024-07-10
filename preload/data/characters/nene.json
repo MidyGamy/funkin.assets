@@ -3,6 +3,7 @@
   "name": "Nene",
   "assetPath": "characters/Nene",
   "startingAnimation": "danceRight",
+  "offsets": [32, 6],
   "animations": [
     {
       "name": "danceLeft",
