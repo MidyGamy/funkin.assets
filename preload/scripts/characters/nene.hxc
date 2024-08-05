@@ -11,6 +11,8 @@ import funkin.modding.base.ScriptedFlxSpriteGroup;
 import funkin.graphics.adobeanimate.FlxAtlasSprite;
 import funkin.util.assets.SoundUtil;
 import funkin.vis.dsp.SpectralAnalyzer;
+import funkin.util.PlatformUtil;
+import funkin.util.HostPlatform;
 import Lambda;
 
 // using Lambda;
@@ -43,17 +45,14 @@ class NeneCharacter extends SparrowCharacter {
 		pupil = new FlxAtlasSprite(0, 0, Paths.animateAtlas("characters/abot/systemEyes", "shared"));
 		pupil.x = this.x;
 		pupil.y = this.y;
-		// pupil.zIndex = this.zIndex - 5;
 
 		abot = ScriptedFlxAtlasSprite.init('ABotAtlasSprite', 0, 0);
 		abot.x = this.x;
 		abot.y = this.y;
-		// abot.zIndex = this.zIndex - 1;
 
     abotViz = new FlxTypedSpriteGroup();
 		abotViz.x = this.x;
 		abotViz.y = this.y;
-		// abotViz.zIndex = abot.zIndex + 1;
 		FlxG.debugger.track(abotViz);
 
     var visFrms:FlxAtlasFrames = Paths.getSparrowAtlas('aBotViz');
@@ -65,10 +64,6 @@ class NeneCharacter extends SparrowCharacter {
     for (lol in 0...7)
     {
       // pushes initial value
-      // volumes.push(0.0);
-      // var sum = function(num:Float, total:Float) return total += num;
-      // var posX:Float = positionX.slice(0, lol);//.fold(sum, 0);
-      // var posY:Float = positionY.slice(0, lol);//.fold(sum, 0);
       var posX:Float = 0;
       var posY:Float = 0;
 
@@ -253,13 +248,6 @@ class NeneCharacter extends SparrowCharacter {
 		super.onUpdate(event);
 		pupil.update(event.elapsed);
 
-		// Set the visibility of ABot to match Nene's.
-		// abot.visible = this.visible;
-		// abotViz.visible = this.visible;
-		// pupil.visible = this.visible;
-		// eyeWhites.visible = this.visible;
-		// stereoBG.visible = this.visible;
-
 		if (pupil.anim.isPlaying)
 		{
 			switch (pupilState)
@@ -285,40 +273,26 @@ class NeneCharacter extends SparrowCharacter {
 		if (!refershedLol)
 		{
 			abot.x = this.x - 132;
-			abot.y = this.y + 310; // 764 - 740
-			// abot.zIndex = this.zIndex - 10;
-
-			// PlayState.instance.currentStage.add(abot);
+			abot.y = this.y + 310;
 
 			abotViz.x = abot.x + 200;
 			abotViz.y = abot.y + 84;
-			// abotViz.zIndex = abot.zIndex - 1;
-			// PlayState.instance.currentStage.add(abotViz);
-
 
 			eyeWhites.x = abot.x + 40;
 			eyeWhites.y = abot.y + 250;
-			// eyeWhites.zIndex = abot.zIndex - 10;
-			// PlayState.instance.currentStage.add(eyeWhites);
 
 			pupil.x = abot.x - 507;
 			pupil.y = abot.y - 492;
-			// pupil.zIndex = eyeWhites.zIndex + 5;
-			// PlayState.instance.currentStage.add(pupil);
 
 			stereoBG.x = abot.x + 150;
 			stereoBG.y = abot.y + 30;
-			// stereoBG.zIndex = abot.zIndex - 8;
-			// PlayState.instance.currentStage.add(stereoBG);
 
-			// PlayState.instance.currentStage.refresh();
 			refershedLol = true;
 		}
 
 		if (shouldTransitionState()) {
 			transitionState();
 		}
-		// playAnimation('lowerKnife');
 	}
 
 	override function draw() {
@@ -339,7 +313,6 @@ class NeneCharacter extends SparrowCharacter {
 	public function onScriptEvent(event:ScriptEvent):Void {
 		if (event.type == "SONG_START")
 		{
-			// abotViz.snd = FlxG.sound.music;
 			initAnalyzer();
 			songStarted = true;
 		}
@@ -363,10 +336,6 @@ class NeneCharacter extends SparrowCharacter {
 
       var animFrame:Int = Math.round(levels[i+1].value * 5);
 
-      #if desktop
-      // animFrame = Math.round(animFrame * FlxG.sound.volume);
-      #end
-
       animFrame = Math.floor(Math.min(5, animFrame));
       animFrame = Math.floor(Math.max(0, animFrame));
 
@@ -378,18 +347,15 @@ class NeneCharacter extends SparrowCharacter {
 
   public function initAnalyzer()
   {
-    // @:privateAccess
     analyzer = new SpectralAnalyzer(SoundUtil.getSoundChannelSource(FlxG.sound.music), 8, 0.1, 40);
-    // analyzer.minFreq = 2793.75;
 
-    #if desktop
-    // On desktop it uses FFT stuff that isn't as optimized as the direct browser stuff we use on HTML5
-    // So we want to manually change it!
-    analyzer.fftN = 256;
-    #end
+		var platform:HostPlatform = PlatformUtil.detectHostPlatform();
 
-    // analyzer.maxDb = -35;
-    // analyzer.fftN = 2048;
+		if (platform != HostPlatform.HTML5) {
+			// On desktop it uses FFT stuff that isn't as optimized as the direct browser stuff we use on HTML5
+			// So we want to manually change it!
+			analyzer.fftN = 256;
+		}
   }
 
 	var animationFinished:Bool = false;
