@@ -15,6 +15,7 @@
     "songVariations": [],
     "difficulties": ["easy", "normal", "hard"],
     "characters": {
+      "unlockedInstByDefault": false,
       "player": "pico-playable",
       "girlfriend": "nene",
       "opponent": "tankman",
