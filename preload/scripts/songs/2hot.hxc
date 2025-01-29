@@ -82,6 +82,8 @@ class TwoHOTSong extends Song
 		VideoCutscene.onVideoStarted.removeAll();
 		VideoCutscene.hideVideo();
 
+		// PlayState.instance.currentStage.getGirlfriend().scriptGet('abot').scriptCall("initAnalyzer", [cutsceneMusic]);
+
 		new FlxTimer().start(1, function(tmr)
 		{
 			PlayState.instance.tweenCameraToPosition(1539, 833.5, 2, FlxEase.quadInOut);
@@ -93,6 +95,10 @@ class TwoHOTSong extends Song
 		new FlxTimer().start(0.5, function(tmr)
 		{
 			PlayState.instance.currentStage.getGirlfriend().dance(true);
+
+			if (PlayState.instance.currentStage.getGirlfriend().scriptGet('abot') != null) {
+				PlayState.instance.currentStage.getGirlfriend().scriptGet('abot').scriptCall("dance");
+			}
 		}, 10);
 
 		new FlxTimer().start(2, function(tmr)

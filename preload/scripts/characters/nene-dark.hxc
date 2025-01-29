@@ -2,53 +2,44 @@ import funkin.play.character.SparrowCharacter;
 import funkin.play.PlayState;
 import flixel.FlxG;
 import flixel.FlxSprite;
+import flixel.util.FlxTimer;
 import flixel.group.FlxTypedSpriteGroup;
 import funkin.graphics.FunkinSprite;
+import funkin.play.character.CharacterDataParser;
 import funkin.modding.base.ScriptedFlxAtlasSprite;
 import funkin.modding.base.ScriptedFlxSprite;
 import funkin.modding.base.ScriptedFlxSpriteGroup;
 import funkin.graphics.adobeanimate.FlxAtlasSprite;
-import funkin.audio.visualize.ABotVis;
-import funkin.play.character.BaseCharacter;
-import funkin.play.character.CharacterDataParser;
-import funkin.play.character.CharacterType;
-import funkin.graphics.shaders.TextureSwap;
-import openfl.display.BitmapData;
 import funkin.util.FlxColorUtil;
-import funkin.graphics.shaders.AdjustColorShader;
+import funkin.audio.visualize.ABotVis;
 
 class NeneDarkCharacter extends SparrowCharacter {
 	function new() {
 		super('nene-dark');
 	}
 
+	var normalChar:BaseCharacter;
+
 	var pupilState:Int = 0;
 
 	var PUPIL_STATE_NORMAL = 0;
 	var PUPIL_STATE_LEFT = 1;
 
-	var abot:FlxAtlasSprite;
-	var abotViz:ABotVis;
-	var stereoBG:FlxSprite;
-	var eyeWhites:FlxSprite;
-	var pupil:FlxAtlasSprite;
+	var abot:FlxSpriteGroup;
 
-	var testShader:TextureSwap;
-
-	var normalChar:BaseCharacter;
-
-
-  var vizAdjustColor:AdjustColorShader;
 
 	override function set_alpha(val:Float):Float{
 		super.set_alpha(val);
-		testShader.amount = val;
 		if(val != 1)
 			normalChar.alpha = 1;
 		else
 			normalChar.alpha = 0;
 
-		eyeWhites.color = FlxColorUtil.interpolate(0xFFFFFFFF, 0xFF6F96CE, val);
+		if(abot != null)
+		{
+			abot.scriptGet('testShader').amount = val;
+			abot.scriptGet('eyeWhites').color = FlxColorUtil.interpolate(0xFFFFFFFF, 0xFF6F96CE, val);
+		}
 
     return val;
 	}
@@ -56,45 +47,25 @@ class NeneDarkCharacter extends SparrowCharacter {
 	function onCreate(event:ScriptEvent) {
 		super.onCreate(event);
 
-		stereoBG = new FlxSprite(0, 0, Paths.image('characters/abot/stereoBG'));
-		stereoBG.color = 0xFF616785;
-
-		eyeWhites = new FunkinSprite().makeSolidColor(160, 60);
-
-		pupil = new FlxAtlasSprite(0, 0, Paths.animateAtlas("characters/abot/systemEyes", "shared"));
-		pupil.x = this.x;
-		pupil.y = this.y;
-		pupil.zIndex = this.zIndex - 5;
-
-		testShader = new TextureSwap();
-		testShader.swappedImage = BitmapData.fromFile('assets/shared/images/characters/abot/dark/abotSystem/spritemap1.png');
-		abot = ScriptedFlxAtlasSprite.init('ABotAtlasSprite', 0, 0);
-		abot.x = this.x;
-		abot.y = this.y;
-		abot.zIndex = this.zIndex - 1;
-		abot.shader = testShader;
-
-		abotViz = new ABotVis(FlxG.sound.music);
-		abotViz.x = this.x;
-		abotViz.y = this.y;
-		abotViz.zIndex = abot.zIndex + 1;
-		FlxG.debugger.track(abotViz);
-
-		vizAdjustColor = new AdjustColorShader();
-
-    vizAdjustColor.brightness = -12;
-    vizAdjustColor.hue = -26;
-    vizAdjustColor.contrast = 0;
-		vizAdjustColor.saturation = -45;
-
-		for(spr in abotViz.members){
-			spr.shader = vizAdjustColor;
-		}
+    // abot = ScriptedFlxSpriteGroup.init('AbotSpeaker', -100, 216, this);
+		// FlxG.debugger.track(abot);
+		// abot.scriptCall("setupDarkShaders");
 
 		normalChar = CharacterDataParser.fetchCharacter('nene');
     normalChar.zIndex = this.zIndex - 1;
 		normalChar.alpha = 0;
     normalChar.flipX = false;
+	}
+
+	override function onAdd() {
+
+			abot = normalChar.scriptGet("abot"); //why should I create a new one when this one alreary exists?
+			// abot.zIndex = this.zIndex - 10;
+			// PlayState.instance.currentStage.add(abot);
+			abot.scriptCall("setupDarkShaders");
+			abot.scriptSet("character", this);
+			trace(abot.scriptGet("character"));
+			abot.scriptCall("refreshPoses");
 	}
 
 	/**
@@ -168,19 +139,9 @@ class NeneDarkCharacter extends SparrowCharacter {
 
 	override function playAnimation(name:String, restart:Bool, ignoreOther:Bool) {
 			super.playAnimation(name, restart, ignoreOther);
-      if(normalChar != null){
-        normalChar.playAnimation(name, restart, ignoreOther);
-        normalChar.setPosition(this.x, this.y);
-      }
 	}
 
 	function dance(forceRestart:Bool) {
-		if (abot != null)
-		{
-			abot.playAnimation("");
-    	abot.anim.curFrame = 1; // we start on this frame, since from Flash the symbol has a non-bumpin frame on frame 0
-		}
-
 		// Then, perform the appropriate animation for the current state.
 		switch(currentState) {
 			case STATE_DEFAULT:
@@ -205,141 +166,12 @@ class NeneDarkCharacter extends SparrowCharacter {
 		}
 	}
 
-	var refershedLol:Bool = false;
-
-	/**
-	 * Called when the chart hits a song event.
-	 */
-	public override function onSongEvent(scriptEvent:SongEventScriptEvent)
-	{
-		super.onSongEvent(scriptEvent);
-		if (scriptEvent.eventData.eventKind == "FocusCamera")
-		{
-			var eventProps = scriptEvent.eventData.value;
-			switch (Std.parseInt(eventProps.char)) {
-				case 0:
-					movePupilsRight();
-				case 1:
-					movePupilsLeft();
-				default:
-			}
-		}
-
-	}
-
-	function movePupilsLeft():Void {
-		if (pupilState == PUPIL_STATE_LEFT) return;
-		trace('Move pupils left');
-		pupil.playAnimation('');
-		pupil.anim.curFrame = 0;
-		// pupilState = PUPIL_STATE_LEFT;
-	}
-
-	function movePupilsRight():Void {
-		if (pupilState == PUPIL_STATE_NORMAL) return;
-		trace('Move pupils right');
-		pupil.playAnimation('');
-		pupil.anim.curFrame = 17;
-		// pupilState = PUPIL_STATE_NORMAL;
-	}
-
-	function moveByNoteKind(kind:String) {
-		// Force ABot to look where the action is happening.
-		switch(event.note.kind) {
-			case "weekend-1-lightcan":
-				movePupilsLeft();
-			case "weekend-1-kickcan":
-				// movePupilsLeft();
-			case "weekend-1-kneecan":
-				// movePupilsLeft();
-			case "weekend-1-cockgun":
-				movePupilsRight();
-			case "weekend-1-firegun":
-				// movePupilsRight();
-			default: // Nothing
-		}
-	}
-
-	function onNoteHit(event:HitNoteScriptEvent)
-	{
-		super.onNoteHit(event);
-		moveByNoteKind(event.note.kind);
-	}
-
-	function onNoteMiss(event:NoteScriptEvent)
-	{
-		super.onNoteMiss(event);
-		moveByNoteKind(event.note.kind);
+	override public function update(elapsed:Float) {
+		super.update(elapsed);
 	}
 
 	function onUpdate(event:UpdateScriptEvent) {
 		super.onUpdate(event);
-
-		// Set the visibility of ABot to match Nene's.
-		abot.visible = this.visible;
-		pupil.visible = this.visible;
-		eyeWhites.visible = this.visible;
-		stereoBG.visible = this.visible;
-
-		if (pupil?.anim?.isPlaying)
-		{
-			switch (pupilState)
-			{
-				case PUPIL_STATE_NORMAL:
-					if (pupil.anim.curFrame >= 17)
-					{
-						trace('Done moving pupils left');
-						pupilState = PUPIL_STATE_LEFT;
-						pupil.anim.pause();
-					}
-
-				case PUPIL_STATE_LEFT:
-					if (pupil.anim.curFrame >= 30)
-					{
-						trace('Done moving pupils right');
-						pupilState = PUPIL_STATE_NORMAL;
-						pupil.anim.pause();
-					}
-			}
-		}
-
-		// refreshes just for the zIndex shit!
-		if (!refershedLol)
-		{
-			abot.x = this.x - 100;
-			abot.y = this.y + 216; // 764 - 740
-			abot.zIndex = this.zIndex - 10;
-
-			PlayState.instance.currentStage.add(abot);
-
-			abotViz.x = abot.x + 200;
-			abotViz.y = abot.y + 84;
-			abotViz.zIndex = abot.zIndex - 1;
-			PlayState.instance.currentStage.add(abotViz);
-
-			eyeWhites.x = abot.x + 40;
-			eyeWhites.y = abot.y + 250;
-			eyeWhites.zIndex = abot.zIndex - 10;
-			PlayState.instance.currentStage.add(eyeWhites);
-
-			pupil.x = abot.x - 507;
-			pupil.y = abot.y - 492;
-			pupil.zIndex = eyeWhites.zIndex + 5;
-			PlayState.instance.currentStage.add(pupil);
-
-			stereoBG.x = abot.x + 150;
-			stereoBG.y = abot.y + 30;
-			stereoBG.zIndex = abot.zIndex - 8;
-			PlayState.instance.currentStage.add(stereoBG);
-
-			normalChar.zIndex = this.zIndex - 3;
-    	normalChar.flipX = false;
-
-			PlayState.instance.currentStage.add(normalChar);
-
-			PlayState.instance.currentStage.refresh();
-			refershedLol = true;
-		}
 
 		if (shouldTransitionState()) {
 			transitionState();
@@ -347,12 +179,21 @@ class NeneDarkCharacter extends SparrowCharacter {
 	}
 
 	public function onScriptEvent(event:ScriptEvent):Void {
-		if (event.type == "SONG_START")
-		{
-			abotViz.snd = FlxG.sound.music;
-			abotViz.initAnalyzer();
-		}
+		if(abot != null)
+			abot.scriptCall('onScriptEvent', [event]);
+		super.onScriptEvent(event);
 	}
+
+  override function draw()
+  {
+		if(!visible)
+			return;
+		if(abot != null)
+    	abot.draw();
+		if(normalChar != null)
+			normalChar.draw();
+    super.draw();
+  }
 
 	var animationFinished:Bool = false;
 
@@ -377,6 +218,12 @@ class NeneDarkCharacter extends SparrowCharacter {
 
 	function onAnimationFrame(name:String, frameNumber:Int, frameIndex:Int) {
 		super.onAnimationFrame(name, frameNumber, frameIndex);
+		if(normalChar != null){
+			if(normalChar.animation.curAnim.name != name)
+				normalChar.playAnimation(name);
+			normalChar.animation.curAnim.curFrame = frameNumber;
+			normalChar.setPosition(this.x, this.y);
+		}
 
 		switch(currentState) {
 			case STATE_PRE_RAISE:
