@@ -179,6 +179,7 @@ class PhillyTrainErectStage extends Stage
 		}
 		cutsceneMusic.volume = 1;
 		cutsceneMusic.play(false);
+		PlayState.instance.currentStage.getGirlfriend().scriptGet('abot').scriptCall("initAnalyzer", [cutsceneMusic]);
 
 		picoPlayer.scriptCall('doAnim', ['Player', playerShoots, explode, cutsceneTimerManager]);
 		picoOpponent.scriptCall('doAnim', ['Opponent', !playerShoots, explode, cutsceneTimerManager]);
@@ -287,6 +288,10 @@ class PhillyTrainErectStage extends Stage
 	function onCutsceneBeatHit() {
 		if (PlayState.instance.currentStage.getGirlfriend().isAnimationFinished()) {
 			PlayState.instance.currentStage.getGirlfriend().dance(true);
+		}
+
+		if (PlayState.instance.currentStage.getGirlfriend().scriptGet('abot') != null) {
+			PlayState.instance.currentStage.getGirlfriend().scriptGet('abot').scriptCall("dance");
 		}
 	}
 

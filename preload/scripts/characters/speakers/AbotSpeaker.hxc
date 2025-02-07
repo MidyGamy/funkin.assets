@@ -1,0 +1,370 @@
+import funkin.play.character.BaseCharacter;
+import funkin.play.PlayState;
+import flixel.FlxG;
+import flixel.FlxSprite;
+import flixel.math.FlxPoint;
+import flixel.util.FlxTimer;
+import flixel.group.FlxTypedSpriteGroup;
+import funkin.graphics.FunkinSprite;
+import funkin.modding.base.ScriptedFlxAtlasSprite;
+import funkin.modding.base.ScriptedFlxSprite;
+import funkin.modding.base.ScriptedFlxSpriteGroup;
+import funkin.graphics.adobeanimate.FlxAtlasSprite;
+import funkin.audio.visualize.ABotVis;
+import funkin.audio.visualize.dsp.FlxSoundAnalyzer;
+import funkin.graphics.shaders.TextureSwap;
+import funkin.graphics.shaders.AdjustColorShader;
+import openfl.display.BitmapData;
+
+class AbotSpeaker extends FlxTypedSpriteGroup {
+
+	var character:BaseCharacter;
+	var posX:Float = 0;
+	var posY:Float = 0;
+
+	var oldChar_x = 0;
+	var oldChar_y = 0;
+
+  var analyzer:FlxSoundAnalyzer;
+
+	var numBar:Int = 7;
+
+	var pupilState:Int = 0;
+
+	var PUPIL_STATE_NORMAL = 0;
+	var PUPIL_STATE_LEFT = 1;
+
+
+	var abot:FlxAtlasSprite;
+	var abotViz:FlxTypedSpriteGroup;
+	var pupil:FlxAtlasSprite;
+	var stereoBG:FlxSprite;
+	var eyeWhites:FunkinSprite;
+
+	//used with nene-dark
+	var testShader:TextureSwap;
+  var vizAdjustColor:AdjustColorShader;
+
+	function new(offsetX:Float, offsetY:Float, character:BaseCharacter) {
+		super(0, 0);
+		this.character = character;
+		posX = offsetX; //-100
+		posY = offsetY; //216
+		color = character.color;
+
+		stereoBG = new FlxSprite(0, 0, Paths.image('characters/abot/stereoBG'));
+		stereoBG.x = 150;
+		stereoBG.y = 30;
+		add(stereoBG);
+
+		eyeWhites = new FunkinSprite().makeSolidColor(160, 60);
+		eyeWhites.x = 40;
+		eyeWhites.y = 250;
+		add(eyeWhites);
+
+		pupil = new FlxAtlasSprite(0, 0, Paths.animateAtlas("characters/abot/systemEyes", "shared"));
+		pupil.x = -507;
+		pupil.y = -492;
+		add(pupil);
+
+    abotViz = new FlxTypedSpriteGroup();
+		abotViz.x = 200;
+		abotViz.y = 84;
+		add(abotViz);
+
+    var visFrms:FlxAtlasFrames = Paths.getSparrowAtlas('aBotViz');
+
+    // these are the differences in X position, from left to right
+    var positionX:Array<Float> = [0, 59, 56, 66, 54, 52, 51];
+    var positionY:Array<Float> = [0, -8, -3.5, -0.4, 0.5, 4.7, 7];
+
+    for (lol in 0...numBar)
+    {
+      // pushes initial value
+      // volumes.push(0.0);
+      // var sum = function(num:Float, total:Float) return total += num;
+      // var daPosX:Float = positionX.slice(0, lol);//.fold(sum, 0);
+      // var daPosY:Float = positionY.slice(0, lol);//.fold(sum, 0);
+      var daPosX:Float = 0;
+      var daPosY:Float = 0;
+
+    	for (i in 0...lol+1){
+				daPosX += positionX[i];
+				daPosY += positionY[i];
+			}
+
+      var viz:FlxSprite = new FlxSprite(daPosX, daPosY);
+      viz.frames = visFrms;
+      abotViz.add(viz);
+
+      var visStr = 'viz';
+      viz.animation.addByPrefix('VIZ', visStr + Std.string(lol+1), 0);
+      viz.animation.play('VIZ', false, false, 6);
+    }
+
+		abot = new FlxAtlasSprite(0, 0, Paths.animateAtlas("characters/abot/abotSystem", "shared"), {
+      FrameRate: 24.0,
+      Reversed: false,
+      // ?OnComplete:Void -> Void,
+      ShowPivot: false,
+      Antialiasing: true,
+      ScrollFactor: new FlxPoint(1, 1),
+    });
+		add(abot);
+
+		refreshPoses();
+
+		// trace(character);
+		// trace("abot loaded!");
+
+		FlxG.debugger.track(abotViz);
+	}
+
+	function setupDarkShaders()
+	{
+		testShader = new TextureSwap();
+		testShader.swappedImage = BitmapData.fromFile('assets/shared/images/characters/abot/dark/abotSystem/spritemap1.png');
+		abot.shader = testShader;
+
+		vizAdjustColor = new AdjustColorShader();
+
+    vizAdjustColor.brightness = -12;
+    vizAdjustColor.hue = -26;
+    vizAdjustColor.contrast = 0;
+		vizAdjustColor.saturation = -45;
+
+		for(spr in abotViz.members){
+			spr.shader = vizAdjustColor;
+		}
+	}
+
+	function dance(forceRestart:Bool) {
+		if (abot != null)
+		{
+			abot.playAnimation("");
+    	abot.anim.curFrame = 1; // we start on this frame, since from Flash the symbol has a non-bumpin frame on frame 0
+		}
+	}
+
+	var refershedLol:Bool = false;
+
+	/**
+	 * Called when the chart hits a song event.
+	 */
+	public override function onSongEvent(scriptEvent:SongEventScriptEvent)
+	{
+		// super.onSongEvent(scriptEvent);
+		if (scriptEvent.eventData.eventKind == "FocusCamera")
+		{
+			var eventProps = scriptEvent.eventData.value;
+			switch (Std.parseInt(eventProps.char)) {
+				case 0:
+					movePupilsRight();
+				case 1:
+					movePupilsLeft();
+				default:
+			}
+		}
+	}
+
+	function movePupilsLeft():Void {
+		if (pupilState == PUPIL_STATE_LEFT) return;
+		trace('Move pupils left');
+		pupil.playAnimation('');
+		pupil.anim.curFrame = 0;
+		// pupilState = PUPIL_STATE_LEFT;
+	}
+
+	function movePupilsRight():Void {
+		if (pupilState == PUPIL_STATE_NORMAL) return;
+		trace('Move pupils right');
+		pupil.playAnimation('');
+		pupil.anim.curFrame = 17;
+		// pupilState = PUPIL_STATE_NORMAL;
+	}
+
+	function moveByNoteKind(kind:String) {
+		// Force ABot to look where the action is happening.
+		switch(event.note.kind) {
+			case "weekend-1-lightcan":
+				movePupilsLeft();
+			case "weekend-1-kickcan":
+				// movePupilsLeft();
+			case "weekend-1-kneecan":
+				// movePupilsLeft();
+			case "weekend-1-cockgun":
+				movePupilsRight();
+			case "weekend-1-firegun":
+				// movePupilsRight();
+			default: // Nothing
+		}
+	}
+
+	function onUpdate(event:UpdateScriptEvent) {
+
+		update(event.elapsed);
+
+		if(analyzer != null)
+		{
+			FlxG.watch.addQuick("AbotLevelsNum", analyzer.getLevels().length);
+			FlxG.watch.addQuick("AbotLevels", analyzer.getLevels());
+		}
+
+		if (pupil?.anim?.isPlaying)
+		{
+			switch (pupilState)
+			{
+				case PUPIL_STATE_NORMAL:
+					if (pupil.anim.curFrame >= 17)
+					{
+						trace('Done moving pupils left');
+						pupilState = PUPIL_STATE_LEFT;
+						pupil.anim.pause();
+					}
+
+				case PUPIL_STATE_LEFT:
+					if (pupil.anim.curFrame >= 30)
+					{
+						trace('Done moving pupils right');
+						pupilState = PUPIL_STATE_NORMAL;
+						pupil.anim.pause();
+					}
+			}
+		}
+
+		if(character != null)
+		{
+			if(oldChar_x != character.x || oldChar_y != character.y)
+				refreshPoses();
+
+			if(color != character.color)
+				color = character.color;
+
+			if(shader != character.shader)
+				shader = character.shader;
+		}
+
+		// refreshes just for the zIndex shit!
+		// refreshPoses();
+	}
+
+	public function refreshPoses()
+	{
+		oldChar_x = character.x;
+		oldChar_y = character.y;
+
+		x = character.x + posX;
+		y = character.y + posY;
+
+		// abot.x = character.x + posX;
+		// abot.y = character.y + posY;
+
+		// abotViz.x = abot.x + 200;
+		// abotViz.y = abot.y + 84;
+
+		// eyeWhites.x = abot.x + 40;
+		// eyeWhites.y = abot.y + 250;
+
+		// pupil.x = abot.x - 507;
+		// pupil.y = abot.y - 492;
+
+		// stereoBG.x = abot.x + 150;
+		// stereoBG.y = abot.y + 30;
+	}
+
+	public function onScriptEvent(event:ScriptEvent):Void {
+		if (event.type == "BEAT_HIT")
+		{
+			dance();
+		}
+		if (event.type == "SONG_EVENT")
+		{
+			onSongEvent(event);
+		}
+		if (event.type == "NOTE_MISS" || event.type == "NOTE_HIT")
+		{
+			moveByNoteKind(event.note.kind);
+		}
+		if (event.type == "UPDATE")
+		{
+			onUpdate(event);
+		}
+		if (event.type == "SONG_START")
+		{
+				initAnalyzer(FlxG.sound.music);
+		}
+		// if (event.type == "COUNTDOWN_START")
+		// {
+		// 	if(PlayState.instance.currentSong.scriptGet('hasPlayedCutscene') != null)
+		// 	{
+		// 		if(PlayState.instance.currentSong.scriptGet('hasPlayedCutscene'))
+		// 		{
+		// 			cutsceneMusicLink();
+		// 		}
+		// 	}
+		// 	else
+		// 		cutsceneMusicLink();
+		// }
+		// if (event.type == "SONG_END")
+		// {
+		// 	cutsceneMusicLink();
+		// }
+		// super.onScriptEvent(event);
+	}
+
+	function cutsceneMusicLink()
+	{
+		if(PlayState.instance.currentSong.scriptGet('hasPlayedInGameCutscene') == null)
+			return;
+
+		if(!PlayState.instance.currentSong.scriptGet('hasPlayedInGameCutscene'))
+		{
+			new FlxTimer().start(0.01, function(tmr){
+				if(PlayState.instance.currentSong.scriptGet('cutsceneMusic') != null){
+					initAnalyzer(PlayState.instance.currentSong.scriptGet('cutsceneMusic'));
+				}
+			});
+		}
+	}
+
+  override function draw()
+  {
+    if (analyzer != null) drawFFT();
+    super.draw();
+  }
+
+  function initAnalyzer(snd:FlxSound)
+  {
+    if (analyzer != null)
+    {
+      analyzer.snd = snd;
+      return;
+    }
+    analyzer = new FlxSoundAnalyzer(snd, numBar, 0.1, 40);
+  }
+
+
+  /**
+   * TJW funkin.vis based visualizer! updateFFT() is the old nasty shit that dont worky!
+   */
+  function drawFFT():Void
+  {
+    var levels = analyzer.getLevels();
+
+    for (i in 0...Math.min(abotViz.members.length, levels.length))
+    {
+      var animFrame:Int = Math.round(levels[i].value * 5);
+
+      // Web version scales with the Flixel volume level.
+      // This line brings platform parity but looks worse.
+      // animFrame = Math.round(animFrame * FlxG.sound.volume);
+
+      animFrame = Math.floor(Math.min(5, animFrame));
+      animFrame = Math.floor(Math.max(0, animFrame));
+
+      animFrame = Std.int(Math.abs(animFrame - 5)); // shitty dumbass flip, cuz dave got da shit backwards lol!
+
+      abotViz.members[i].animation.curAnim.curFrame = animFrame;
+    }
+  }
+}
