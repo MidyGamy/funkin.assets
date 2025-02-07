@@ -6,6 +6,7 @@
   "playData": {
     "difficulties": ["easy", "normal", "hard"],
     "characters": {
+      "unlockedInstByDefault": false,
       "player": "pico-playable",
       "girlfriend": "nene",
       "opponent": "pico",
@@ -28,12 +29,7 @@
       "bpm": 150,
       "n": 4,
       "d": 4,
-      "bt": [
-        4,
-        4,
-        4,
-        4
-      ]
+      "bt": [4, 4, 4, 4]
     }
   ]
 }

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<collapsible-dialog id="toolboxMetadata" title="Song Metadata" width="345" height="492">
+<collapsible-dialog id="toolboxMetadata" title="Song Metadata" width="345" height="522">
     <vbox width="100%" height="100%">
-        <frame text="Variation: Default" width="100%" height="250" id="frameVariation">
+        <frame text="Variation: Default" width="100%" height="280" id="frameVariation">
             <vbox width="100%" height="100%">
                 <grid columns="2" height="100%">
                     <label text="Song Name:" verticalAlign="center" horizontalAlign="right" />
@@ -33,6 +33,8 @@
                             <item text="Pixel" />
                         </data>
                     </dropdown>
+                    <label text="Unlocked alt inst:" verticalAlign="center" horizontalAlign="right" />
+                    <checkbox id="inputIsunlockedInstByDefault" text="by default" selected="true" tooltip="Only affect alt instrumentals"/>
                 </grid>
                 <hbox width="100%">
                     <button id="buttonCharacterOpponent" width="70" height="70" padding="8" iconPosition="top">
