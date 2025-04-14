@@ -12,6 +12,7 @@
     "songVariations": [],
     "difficulties": ["easy", "normal", "hard"],
     "characters": {
+      "unlockedInstByDefault": false,
       "player": "pico-pixel",
       "girlfriend": "nene-pixel",
       "opponent": "senpai-angry",

@@ -11,6 +11,7 @@
   "playData": {
     "difficulties": ["normal", "easy", "hard"],
     "characters": {
+      "unlockedInstByDefault": false,
       "player": "pico-pixel",
       "girlfriend": "nene-pixel",
       "opponent": "senpai",

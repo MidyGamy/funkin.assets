@@ -15,6 +15,7 @@
     "songVariations": [],
     "difficulties": ["easy", "normal", "hard"],
     "characters": {
+      "unlockedInstByDefault": false,
       "player": "pico-holding-nene",
       "girlfriend": "otis-speaker",
       "opponent": "tankman-bloody",
